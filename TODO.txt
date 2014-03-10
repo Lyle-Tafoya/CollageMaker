@@ -1,0 +1,7 @@
+This program is still in pre-alpha stage. Here is a list of things to change/add in order by priority.
+
+1. There is no error checking/handling yet. I'll be adding that soon.
+
+2. Currently the way this program selects images is by checking in the folder called "./Wallpaper/" for images titled "wallpaper-1.jpg", "wallpaper-2.jpg", "wallpaper-3.jpg" etc... This is a cheap hack I did for testing purposes. File names should be either fed in as command line arguments or read in from a file.
+
+3. As it is now, this program only tiles left to right and top to bottom. It should also be able to from right to left or from bottom to top.

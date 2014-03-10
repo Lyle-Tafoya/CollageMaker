@@ -11,3 +11,9 @@
 *.lai
 *.la
 *.a
+
+Wallpapers/
+CollageMaker
+collage.png
+images.txt
+.*.swp
