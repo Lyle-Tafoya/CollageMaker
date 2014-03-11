@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     else if(strcmp(argv[i], "--corner") == 0 || strcmp(argv[i], "-r") == 0)
       corner = stoi(argv[++i]);
     else if(strcmp(argv[i], "--numImages") == 0 || strcmp(argv[i], "-n") == 0)
-      size = stoi(argv[++i]);
+      numImages = stoi(argv[++i]);
   }
 
   // Set up our blank canvas
