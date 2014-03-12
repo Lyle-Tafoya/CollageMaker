@@ -63,10 +63,10 @@ string canvasColor = "black";
 // Default size of main image as a percentage
 unsigned char size = 65;
 // Default corner to place the first image
-unsigned char corner = RandNum(0, 3);
+unsigned char corner;
 // Do not attempt to draw in areas less than minDraw number of pixels
 size_t minDraw = 150;
-bool tileType = RandNum(0, 1);
+bool tileType;
 // File extension
 string filename = "collage.png";
 // Path to image database
@@ -143,6 +143,10 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
 int main(int argc, char *argv[])
 {
   srand(time(NULL));
+
+  corner = RandNum(0, 3);
+  tileType = RandNum(0, 1);
+
   // Handle our command line arguments
   for(int i = 1; i < argc; i++)
   {
@@ -155,7 +159,7 @@ int main(int argc, char *argv[])
     else if(strcmp(argv[i], "--minDraw") == 0 || strcmp(argv[i], "-d") == 0)
       minDraw = stoi(argv[++i]);
     else if(strcmp(argv[i], "--file") == 0 || strcmp(argv[i], "-f") == 0)
-      filename = stoi(argv[++i]);
+      filename = argv[++i];
     else if(strcmp(argv[i], "--size") == 0 || strcmp(argv[i], "-s") == 0)
       size = stoi(argv[++i]);
     else if(strcmp(argv[i], "--type") == 0 || strcmp(argv[i], "-t") == 0)
