@@ -5,10 +5,13 @@ Command Line Arguments:
 --corner, -r  Corner to place the first image. Defaults to 0(top-left going clockwise)
 --file, -f    File name. Format is set based on extension. Defaults to "collage.png".
 --height, -h  Height of the canvas in pixels. Defaults to 1280.
+--path, -p   Specify path to a file containing a list of image path names
 --minDraw, -d Minimum number of pixels needed to tile images in. Defaults to 150.
 --size, -s    Set the size of the first image as a percentage relative to the canvas.
 --type, -t    Choose whether to tile "horizontal" or "vertical" first.
 --width, -w   Set the width of the final collage in pixels. Defaults to 1920.
 
-In order to use this program you must have a folder "./Wallpapers/" containing files "wallpaper-1.jpg", "wallpaper-2.jpg", "wallpaper-3.jpg", ...
-This is a cheap hack added for testing purposes. You MUST specify the number of images with the --numImages argument. This will be removed shortly. See TODO.txt for more information.
+If --path is not set, CollageMaker will look for a file "./images.txt". To generate this file, run the following commands in the root of your image folder
+
+ls -d -1 $PWD/**/*.[jpg,png,bmp]* > images.txt
+echo "$(grep -c "" images.txt && cat images.txt)" > images.txt

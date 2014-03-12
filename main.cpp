@@ -32,12 +32,30 @@ struct DrawOperation
 };
 vector<DrawOperation *> DrawOperation::drawQueue;
 
+struct file
+{
+  ifstream *pFile;
+  // TODO Eventually it should read this from memory instead of from file
+  string GetLine(size_t lineNum)
+  {
+    pFile->seekg(0);
+    string str("");
+    for(size_t i = 0; i < lineNum; i++)
+    {
+      str.clear();
+      getline(*pFile, str);
+    }
+      
+    return str;
+  }
+  file(string fileName) { pFile = new ifstream(fileName); }
+  ~file() { pFile->close(); delete pFile; }
+};
+
 //
 // Global Variables
 //
 
-// Number of images in "./Wallpapers/"
-size_t numImages;
 // Default resolution of output image
 size_t screenWidth = 1920, screenHeight = 1080;
 // Default background color
@@ -45,7 +63,7 @@ string canvasColor = "black";
 // Default size of main image as a percentage
 unsigned char size = 65;
 // Default corner to place the first image
-unsigned char corner = 0;
+unsigned char corner = RandNum(0, 3);
 // Do not attempt to draw in areas less than minDraw number of pixels
 size_t minDraw = 150;
 bool tileType = RandNum(0, 1);
@@ -54,23 +72,24 @@ string filename = "collage.png";
 // Path to image database
 string database = "images.txt";
 
+file *pImages;
+size_t numImages;
 
-// TODO Tile direction should be randomized
+// Tile images in a width x height rectangle.
+// xOrigin and yOrigin represent the location of this rectangle relative to the canvas
+// minDraw represents the minimum number of pixels to scale an image down to
+// tileType determines whether it tiles horizontally or vertically first
 void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, size_t minDraw, bool tileType)
 {
   size_t x = xOrigin, y = yOrigin;
-  static ifstream fileList;
-  static int i = 2;
   vector<DrawOperation *> drawQueue;
 
   // Tile Horizontally
   if(tileType == 0)
   {
-    for(; i <= numImages; i++)
+    while(1)
     {
-      string filename = "Wallpapers/wallpaper-" + to_string(RandNum(2, numImages)) + ".jpg";
-
-      Image *pImage = new Image(filename.c_str());
+      Image *pImage = new Image(pImages->GetLine(1 + RandNum(1, numImages)));
       pImage->resize(Geometry("x" + to_string(height)));
       // If the last image wont fit, tile images in the empty space
       if(((x-xOrigin) + pImage->columns()) > width)
@@ -95,11 +114,9 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
   // Tile Vertically
   else
   {
-    i++;
-    for(; i <= numImages; i++)
+    while(1)
     {
-      string filename = "Wallpapers/wallpaper-" + to_string(RandNum(2, numImages)) + ".jpg";
-      Image *pImage = new Image(filename.c_str());
+      Image *pImage = new Image(pImages->GetLine(1 + RandNum(1, numImages)));
       pImage->resize(Geometry(to_string(width)));
       // If the last image wont fit, tile images in the empty space
       if((y-yOrigin + pImage->rows()) > height)
@@ -126,7 +143,6 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
 int main(int argc, char *argv[])
 {
   srand(time(NULL));
-  
   // Handle our command line arguments
   for(int i = 1; i < argc; i++)
   {
@@ -147,19 +163,22 @@ int main(int argc, char *argv[])
       string tiletype = argv[++i];
       if(tiletype == "vertical" || tiletype == "v")
         tileType = 1;
-      else // Vertical
+      else // Horizontal
         tileType = 0;
     }
     else if(strcmp(argv[i], "--corner") == 0 || strcmp(argv[i], "-r") == 0)
       corner = stoi(argv[++i]);
-    else if(strcmp(argv[i], "--numImages") == 0 || strcmp(argv[i], "-n") == 0)
-      numImages = stoi(argv[++i]);
+    else if(strcmp(argv[i], "--path") == 0 || strcmp(argv[i], "-p") == 0)
+      database = stoi(argv[++i]);
   }
+
+  pImages = new file(database);
+  numImages = stoi(pImages->GetLine(1));
 
   // Set up our blank canvas
   Image canvas(to_string(screenWidth)+"x"+to_string(screenHeight), canvasColor.c_str());
 
-  Image mainImage("Wallpapers/wallpaper-" + to_string(RandNum(1, 106)) + ".jpg");
+  Image mainImage(pImages->GetLine(1 + RandNum(1, numImages)));
   // Downscale the image to the specified size but never upscale
   if((float)screenWidth/(float)mainImage.columns() < (float)screenHeight/(float)mainImage.rows())
   {
@@ -217,8 +236,8 @@ int main(int argc, char *argv[])
   // Tile images vertically first and then horizontally
   else
   {
-    TileImages(screenWidth-mainImage.columns(), screenHeight,
-              (mainX == 0 ? mainImage.columns() : 0), 0,
+    TileImages(screenWidth-mainImage.columns(), screenHeight, // width, height
+              (mainX == 0 ? mainImage.columns() : 0), 0,      // x,y
               minDraw, 1);
     TileImages(mainImage.columns(), screenHeight-mainImage.rows(),
                mainX,  (mainY == 0 ? mainImage.rows() : 0),
