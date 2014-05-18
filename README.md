@@ -14,4 +14,4 @@ Command Line Arguments:
 If --path is not set, CollageMaker will look for a file "./images.txt". To generate this file, run the following command in the root of your image folder
 ls -d -1 $PWD/**/*.[jpg,png,bmp]* > images.txt
 
-![ScreenShot](https://raw.github.com/Lyle-Tafoya/CollageMaker/master/screenshot.jpg)
+![ScreenShot](https://raw.githubusercontent.com/Lyle-Tafoya/CollageMaker/master/screenshot.jpg)
