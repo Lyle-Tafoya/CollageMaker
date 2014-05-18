@@ -1,9 +1,11 @@
+## CollageMaker
+
 CollageMaker creates collages out of images by picking a random corner to place the first image, and then recursively tiling horizontally and vertically around the edges of the image untill most of the space is filled.
 
 Here is a downscaled sample output file
-![ScreenShot](https://raw.githubusercontent.com/Lyle-Tafoya/CollageMaker/master/screenshot.jpg)
+![Screenshot](https://raw.githubusercontent.com/Lyle-Tafoya/CollageMaker/master/screenshot.jpg)
 
-Command Line Arguments:
+#### Command Line Arguments:
 ```
 Argument      | Effect
 --------------|----------------------------------------------------------------
@@ -18,7 +20,9 @@ Argument      | Effect
 --width,   -w | Set the width of the final collage in pixels. Defaults to 1920.
 ```
 
-If --path is not set, CollageMaker will look for a file "./images.txt". This is simply a plain text file containing one absolute path to an image per line. To generate this file, run the following command in the root of your image folder
+**If --path is not set, CollageMaker will look for a file "./images.txt".** This is simply a plain text file containing one absolute path to an image per line. To generate this file, run the following command in the root of your image folder _OSX/Linux_
 ````
 ls -d -1 $PWD/**/*.[jpg,png,bmp]* > images.txt
 ````
+
+If you are using Windows, you will have to find another way to generate this file.
