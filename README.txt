@@ -11,7 +11,6 @@ Command Line Arguments:
 --type, -t    Choose whether to tile "horizontal" or "vertical" first.
 --width, -w   Set the width of the final collage in pixels. Defaults to 1920.
 
-If --path is not set, CollageMaker will look for a file "./images.txt". To generate this file, run the following commands in the root of your image folder
+If --path is not set, CollageMaker will look for a file "./images.txt". To generate this file, run the following command in the root of your image folder
 
 ls -d -1 $PWD/**/*.[jpg,png,bmp]* > images.txt
-echo "$(grep -c "" images.txt && cat images.txt)" > images.txt

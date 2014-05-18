@@ -9,8 +9,10 @@
 using namespace Magick;
 using namespace std;
 
+// Generate a random number between from and to
 size_t RandNum(size_t from, size_t to) { return (rand() % (to-from+1)) + from; }
 
+// Information needed in order to queue a image draw operation
 struct DrawOperation
 {
   Image *pImage;
@@ -32,24 +34,25 @@ struct DrawOperation
 };
 vector<DrawOperation *> DrawOperation::drawQueue;
 
-struct file
+// Read a text file into memory
+struct textfile
 {
-  ifstream *pFile;
-  // TODO Eventually it should read this from memory instead of from file
-  string GetLine(size_t lineNum)
+private:
+  vector<string> lines;
+
+public:
+  textfile(string fileName)
   {
-    pFile->seekg(0);
-    string str("");
-    for(size_t i = 0; i < lineNum; i++)
-    {
-      str.clear();
-      getline(*pFile, str);
-    }
-      
-    return str;
+    ifstream pFile(fileName);
+    string line;
+    while(getline(pFile, line))
+      lines.push_back(line);
+    pFile.close();
   }
-  file(string fileName) { pFile = new ifstream(fileName); }
-  ~file() { pFile->close(); delete pFile; }
+
+  string GetLine(size_t lineNum) const { return lines[lineNum]; }
+  void DelLine(size_t lineNum) { lines.erase(lines.begin()+lineNum); }
+  size_t NumLines() const { return lines.size(); }
 };
 
 //
@@ -62,7 +65,7 @@ size_t screenWidth = 1920, screenHeight = 1080;
 string canvasColor = "black";
 // Default size of main image as a percentage
 unsigned char size = 65;
-// Default corner to place the first image
+// Corner to place the first image
 unsigned char corner;
 // Do not attempt to draw in areas less than minDraw number of pixels
 size_t minDraw = 150;
@@ -72,8 +75,7 @@ string filename = "collage.png";
 // Path to image database
 string database = "images.txt";
 
-file *pImages;
-size_t numImages;
+textfile *pImages;
 
 // Tile images in a width x height rectangle.
 // xOrigin and yOrigin represent the location of this rectangle relative to the canvas
@@ -83,13 +85,16 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
 {
   size_t x = xOrigin, y = yOrigin;
   vector<DrawOperation *> drawQueue;
+  size_t imageNum;
 
   // Tile Horizontally
   if(tileType == 0)
   {
     while(1)
     {
-      Image *pImage = new Image(pImages->GetLine(1 + RandNum(1, numImages)));
+      imageNum = RandNum(0, pImages->NumLines()-1);
+      Image *pImage = new Image(pImages->GetLine(imageNum));
+      pImages->DelLine(imageNum);
       pImage->resize(Geometry("x" + to_string(height)));
       // If the last image wont fit, tile images in the empty space
       if(((x-xOrigin) + pImage->columns()) > width)
@@ -116,7 +121,9 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
   {
     while(1)
     {
-      Image *pImage = new Image(pImages->GetLine(1 + RandNum(1, numImages)));
+      imageNum = RandNum(0, pImages->NumLines()-1);
+      Image *pImage = new Image(pImages->GetLine(imageNum));
+      pImages->DelLine(imageNum);
       pImage->resize(Geometry(to_string(width)));
       // If the last image wont fit, tile images in the empty space
       if((y-yOrigin + pImage->rows()) > height)
@@ -173,16 +180,18 @@ int main(int argc, char *argv[])
     else if(strcmp(argv[i], "--corner") == 0 || strcmp(argv[i], "-r") == 0)
       corner = stoi(argv[++i]);
     else if(strcmp(argv[i], "--path") == 0 || strcmp(argv[i], "-p") == 0)
-      database = stoi(argv[++i]);
+      database = argv[++i];
   }
 
-  pImages = new file(database);
-  numImages = stoi(pImages->GetLine(1));
+  pImages = new textfile(database);
 
   // Set up our blank canvas
   Image canvas(to_string(screenWidth)+"x"+to_string(screenHeight), canvasColor.c_str());
 
-  Image mainImage(pImages->GetLine(1 + RandNum(1, numImages)));
+  size_t imageNum = RandNum(0, pImages->NumLines()-1);
+  Image mainImage(pImages->GetLine(imageNum));
+  pImages->DelLine(imageNum);
+
   // Downscale the image to the specified size but never upscale
   if((float)screenWidth/(float)mainImage.columns() < (float)screenHeight/(float)mainImage.rows())
   {
