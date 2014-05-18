@@ -12,6 +12,8 @@ Command Line Arguments:
 --width, -w   Set the width of the final collage in pixels. Defaults to 1920.
 
 If --path is not set, CollageMaker will look for a file "./images.txt". To generate this file, run the following command in the root of your image folder
+
 ls -d -1 $PWD/**/*.[jpg,png,bmp]* > images.txt
 
+Here is a downscaled sample output file
 ![ScreenShot](https://raw.githubusercontent.com/Lyle-Tafoya/CollageMaker/master/screenshot.jpg)
