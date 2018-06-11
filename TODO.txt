@@ -1,4 +1,6 @@
 This program is still in pre-alpha stage. Here is a list of things to change/add in order by priority.
 
-1. There is no error checking/handling yet. I'll be adding that soon.
-2. As it is now, this program only tiles left to right and top to bottom. It should also be able to from right to left or from bottom to top.
+1. Turn this TODO list into trackable issues on Github
+2. Integrate cmake
+3. There is no error checking/handling yet. I'll be adding that soon.
+4. As it is now, this program only tiles left to right and top to bottom. It should also be able to from right to left or from bottom to top.
