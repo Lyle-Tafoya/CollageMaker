@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 project(CollageMaker)
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES main.cpp tiler.cpp)
 add_executable(CollageMaker ${SOURCE_FILES})
 
 add_definitions( -DMAGICKCORE_QUANTUM_DEPTH=16 )
