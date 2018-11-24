@@ -1,10 +1,12 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
 #include <cstdlib>
-#include <cstring>
 #include <ctime>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <Magick++.h>
 
 // Generate a random number between from and to
@@ -13,23 +15,22 @@ size_t RandNum(size_t from, size_t to) { return (rand() % (to-from+1)) + from; }
 // Information needed in order to queue a image draw operation
 struct DrawOperation
 {
-  Magick::Image *pImage;
+  Magick::Image image;
   size_t x;
   size_t y;
-  DrawOperation(Magick::Image *image, size_t startX, size_t startY)
-    : pImage(image), x(startX), y(startY) { drawQueue.push_back(this); };
-  ~DrawOperation() { delete pImage; }
+  DrawOperation(Magick::Image &&image, size_t startX, size_t startY)
+    : image(std::move(image)), x(startX), y(startY) {};
 
-  static std::vector<DrawOperation *> drawQueue;
+  static std::vector<std::unique_ptr<DrawOperation>> drawQueue;
   static void Draw(Magick::Image &canvas)
   {
-    for(DrawOperation *pDraw : drawQueue)
+    for(auto &&drawOperation : drawQueue)
     {
-      canvas.composite(*(pDraw->pImage), pDraw->x, pDraw->y);
+      canvas.composite(drawOperation->image, drawOperation->x, drawOperation->y);
     }
   }
 };
-std::vector<DrawOperation *> DrawOperation::drawQueue;
+std::vector<std::unique_ptr<DrawOperation>> DrawOperation::drawQueue;
 
 // Read a text file into memory
 struct textfile
@@ -72,7 +73,7 @@ std::string filename = "collage.png";
 // Path to image database
 std::string database = "images.txt";
 
-textfile *pImages;
+std::unique_ptr<textfile> images;
 
 // Tile images in a width x height rectangle.
 // xOrigin and yOrigin represent the location of this rectangle relative to the canvas
@@ -81,7 +82,7 @@ textfile *pImages;
 void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, size_t minDraw, bool tileType)
 {
   size_t x = xOrigin, y = yOrigin;
-  std::vector<DrawOperation *> drawQueue;
+  std::vector<std::unique_ptr<DrawOperation>> drawQueue;
   size_t imageNum;
 
   // Tile Horizontally
@@ -89,25 +90,26 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
   {
     while(1)
     {
-      imageNum = RandNum(0, pImages->NumLines()-1);
-      Magick::Image *pImage = new Magick::Image(pImages->GetLine(imageNum));
-      pImages->DelLine(imageNum);
-      pImage->resize(Magick::Geometry("x" + std::to_string(height)));
+      imageNum = RandNum(0, images->NumLines()-1);
+      Magick::Image image(images->GetLine(imageNum));
+      images->DelLine(imageNum);
+      image.resize(Magick::Geometry("x" + std::to_string(height)));
+      const size_t imageWidth = image.columns();
       // If the last image wont fit, tile images in the empty space
-      if(((x-xOrigin) + pImage->columns()) > width)
+      if(((x-xOrigin) + imageWidth) > width)
       {
         TileImages(width-(x-xOrigin), height, x, y, minDraw, 1);
         break;
       }
 
       // Put this draw operation in the queue
-      drawQueue.push_back(new DrawOperation(pImage, x, y));
+      drawQueue.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
 
-      x  += pImage->columns();
+      x  += imageWidth;
       // If we run out of room to draw, center what we have then stop
       if(((x-xOrigin) + minDraw) > width)
       {
-        for(DrawOperation *drawOperation : drawQueue)
+        for(auto &&drawOperation : drawQueue)
         {
           drawOperation->x += (width-(x-xOrigin))/2;
         }
@@ -120,25 +122,26 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
   {
     while(1)
     {
-      imageNum = RandNum(0, pImages->NumLines()-1);
-      Magick::Image *pImage = new Magick::Image(pImages->GetLine(imageNum));
-      pImages->DelLine(imageNum);
-      pImage->resize(Magick::Geometry(std::to_string(width)));
+      imageNum = RandNum(0, images->NumLines()-1);
+      Magick::Image image(images->GetLine(imageNum));
+      images->DelLine(imageNum);
+      image.resize(Magick::Geometry(std::to_string(width)));
+      const size_t imageHeight = image.rows();
       // If the last image wont fit, tile images in the empty space
-      if((y-yOrigin + pImage->rows()) > height)
+      if((y-yOrigin+imageHeight) > height)
       {
         TileImages(width, height-(y-yOrigin), x, y, minDraw, 0);
         break;
       }
 
       // Put this draw operation in the queue
-      drawQueue.push_back(new DrawOperation(pImage, x, y));
+      drawQueue.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
 
-      y += pImage->rows();
+      y += imageHeight;
       // If we run out of room to draw, center what we have then stop
       if((y-yOrigin + minDraw) > height)
       {
-        for(DrawOperation *drawOperation : drawQueue)
+        for(auto &&drawOperation : drawQueue)
         {
           drawOperation->y += (height-(y-yOrigin))/2;
         }
@@ -146,6 +149,9 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
       }
     }
   }
+  DrawOperation::drawQueue.insert(DrawOperation::drawQueue.end(),
+      std::make_move_iterator(drawQueue.begin()),
+      std::make_move_iterator(drawQueue.end()));
 }
 
 int main(int argc, char *argv[])
@@ -184,15 +190,15 @@ int main(int argc, char *argv[])
       database = argv[++i];
   }
 
-  pImages = new textfile(database);
+  images = std::make_unique<textfile>(database);
 
   // Set up our blank canvas
   Magick::Geometry geometry(std::to_string(screenWidth)+"x"+std::to_string(screenHeight));
   Magick::Image canvas(geometry, canvasColor.c_str());
 
-  size_t imageNum = RandNum(0, pImages->NumLines()-1);
-  Magick::Image mainImage(pImages->GetLine(imageNum));
-  pImages->DelLine(imageNum);
+  size_t imageNum = RandNum(0, images->NumLines()-1);
+  Magick::Image mainImage(images->GetLine(imageNum));
+  images->DelLine(imageNum);
 
   // Downscale the image to the specified size but never upscale
   if((float)screenWidth/(float)mainImage.columns() < (float)screenHeight/(float)mainImage.rows())
@@ -207,6 +213,8 @@ int main(int argc, char *argv[])
     if(mainImage.rows() > imageHeight)
       mainImage.resize(Magick::Geometry("x" + std::to_string(imageHeight)));
   }
+  const size_t mainImageWidth = mainImage.columns();
+  const size_t mainImageHeight = mainImage.rows();
 
   // Randomly pick a corner to draw the first image
   // TODO mainX and mainY should replace corner as CL argument
@@ -220,42 +228,42 @@ int main(int argc, char *argv[])
       break;
     // Top Right
     case 1:
-      mainX = screenWidth - mainImage.columns();
+      mainX = screenWidth - mainImageWidth;
       mainY = 0;
       break;
     // Bottom Right
     case 2:
-      mainX = screenWidth - mainImage.columns();
-      mainY = screenHeight - mainImage.rows();
+      mainX = screenWidth - mainImageWidth;
+      mainY = screenHeight - mainImageHeight;
       break;
     // Bottom Left
     case 3:
       mainX = 0;
-      mainY = screenHeight - mainImage.rows();
+      mainY = screenHeight - mainImageHeight;
       break;
   }
 
   // Draw the first image
-  DrawOperation *pDrawOp = new DrawOperation(&mainImage, mainX, mainY);
+  DrawOperation::drawQueue.emplace_back(std::make_unique<DrawOperation>(std::move(mainImage), mainX, mainY));
 
   // Tile images horizontally first and then vertically
   if(tileType == 0)
   {
-    TileImages(screenWidth, screenHeight-mainImage.rows(),
-              0, (mainY == 0 ? mainImage.rows() : 0),
+    TileImages(screenWidth, screenHeight-mainImageHeight,
+              0, (mainY == 0 ? mainImageHeight : 0),
               minDraw, 0);
-    TileImages(screenWidth-mainImage.columns(), mainImage.rows(),
-              (mainX == 0 ? mainImage.columns() : 0), (mainY == 0 ? 0 : screenHeight - mainImage.rows()),
+    TileImages(screenWidth-mainImageWidth, mainImageHeight,
+              (mainX == 0 ? mainImageWidth : 0), (mainY == 0 ? 0 : screenHeight - mainImageHeight),
                minDraw, 1);
   }
   // Tile images vertically first and then horizontally
   else
   {
-    TileImages(screenWidth-mainImage.columns(), screenHeight, // width, height
-              (mainX == 0 ? mainImage.columns() : 0), 0,      // x,y
+    TileImages(screenWidth-mainImageWidth, screenHeight, // width, height
+              (mainX == 0 ? mainImageWidth : 0), 0,      // x,y
               minDraw, 1);
-    TileImages(mainImage.columns(), screenHeight-mainImage.rows(),
-               mainX,  (mainY == 0 ? mainImage.rows() : 0),
+    TileImages(mainImageWidth, screenHeight-mainImageHeight,
+               mainX,  (mainY == 0 ? mainImageHeight : 0),
                minDraw, 0);
   }
 
