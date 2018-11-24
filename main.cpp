@@ -23,9 +23,8 @@ struct DrawOperation
   static std::vector<DrawOperation *> drawQueue;
   static void Draw(Magick::Image &canvas)
   {
-    for(size_t i = 0; i < drawQueue.size(); i++)
+    for(DrawOperation *pDraw : drawQueue)
     {
-      DrawOperation *pDraw = drawQueue[i];
       canvas.composite(*(pDraw->pImage), pDraw->x, pDraw->y);
     }
   }
@@ -108,8 +107,10 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
       // If we run out of room to draw, center what we have then stop
       if(((x-xOrigin) + minDraw) > width)
       {
-        for(size_t j = 0; j < drawQueue.size(); j++)
-          drawQueue[j]->x += (width-(x-xOrigin))/2;
+        for(DrawOperation *drawOperation : drawQueue)
+        {
+          drawOperation->x += (width-(x-xOrigin))/2;
+        }
         break;
       }
     }
@@ -137,8 +138,10 @@ void TileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, siz
       // If we run out of room to draw, center what we have then stop
       if((y-yOrigin + minDraw) > height)
       {
-        for(size_t j = 0; j < drawQueue.size(); j++)
-          drawQueue[j]->y += (height-(y-yOrigin))/2;
+        for(DrawOperation *drawOperation : drawQueue)
+        {
+          drawOperation->y += (height-(y-yOrigin))/2;
+        }
         break;
       }
     }
