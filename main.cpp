@@ -51,14 +51,22 @@ int main(int argc, char *argv[])
     {
       std::string tiletype = argv[++i];
       if(tiletype == "vertical" || tiletype == "v")
+      {
         tileType = 1;
+      }
       else // Horizontal
+      {
         tileType = 0;
+      }
     }
     else if(strcmp(argv[i], "--corner") == 0 || strcmp(argv[i], "-r") == 0)
+    {
       corner = std::stoi(argv[++i]);
+    }
     else if(strcmp(argv[i], "--path") == 0 || strcmp(argv[i], "-p") == 0)
+    {
       database = argv[++i];
+    }
   }
 
   CollageMaker::Tiler tiler(outputWidth, outputHeight, database);
@@ -71,19 +79,22 @@ int main(int argc, char *argv[])
   {
     size_t imageWidth = (float)size / 100.f * (float)outputWidth;
     if(mainImage.columns() > imageWidth)
+    {
       mainImage.resize(Magick::Geometry(std::to_string(imageWidth)));
+    }
   }
   else
   {
     size_t imageHeight = (float)size / 100.f * (float)outputHeight;
     if(mainImage.rows() > imageHeight)
+    {
       mainImage.resize(Magick::Geometry("x" + std::to_string(imageHeight)));
+    }
   }
   const size_t mainImageWidth = mainImage.columns();
   const size_t mainImageHeight = mainImage.rows();
 
   // Randomly pick a corner to draw the first image
-  // TODO mainX and mainY should replace corner as CL argument
   size_t mainX = 0, mainY = 0;
   switch(corner)
   {
@@ -109,31 +120,24 @@ int main(int argc, char *argv[])
       break;
   }
 
-  // Draw the first image
+  // Queue the first image to be drawn
   CollageMaker::Tiler::DrawOperation::drawQueue.emplace_back(std::make_unique<CollageMaker::Tiler::DrawOperation>(std::move(mainImage), mainX, mainY));
 
   // Tile images horizontally first and then vertically
   if(tileType == 0)
   {
-    tiler.tileImages(outputWidth, outputHeight-mainImageHeight,
-              0, (mainY == 0 ? mainImageHeight : 0),
-              minDraw, 0);
-    tiler.tileImages(outputWidth-mainImageWidth, mainImageHeight,
-              (mainX == 0 ? mainImageWidth : 0), (mainY == 0 ? 0 : outputHeight - mainImageHeight),
-               minDraw, 1);
+    tiler.tileImages(outputWidth, outputHeight-mainImageHeight, 0, (mainY == 0 ? mainImageHeight : 0), minDraw, 0);
+    tiler.tileImages(outputWidth-mainImageWidth, mainImageHeight, (mainX == 0 ? mainImageWidth : 0), (mainY == 0 ? 0 : outputHeight - mainImageHeight), minDraw, 1);
   }
   // Tile images vertically first and then horizontally
   else
   {
-    tiler.tileImages(outputWidth-mainImageWidth, outputHeight,
-              (mainX == 0 ? mainImageWidth : 0), 0,
-              minDraw, 1);
-    tiler.tileImages(mainImageWidth, outputHeight-mainImageHeight,
-               mainX,  (mainY == 0 ? mainImageHeight : 0),
-               minDraw, 0);
+    tiler.tileImages(outputWidth-mainImageWidth, outputHeight, (mainX == 0 ? mainImageWidth : 0), 0, minDraw, 1);
+    tiler.tileImages(mainImageWidth, outputHeight-mainImageHeight, mainX,  (mainY == 0 ? mainImageHeight : 0), minDraw, 0);
   }
 
   tiler.draw();
   tiler.canvas.write(filename);
+
   return 0;
 }
