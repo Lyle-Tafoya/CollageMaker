@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
   size_t imageNum = CollageMaker::randNum(0, tiler.imageFilePaths.size()-1);
   Magick::Image mainImage(tiler.popImagePath(imageNum));
   // Downscale the image to the specified size but never upscale
-  if((float)FLAGS_outputWidth/(float)mainImage.columns() < (float)FLAGS_outputHeight/(float)mainImage.rows())
+  if(static_cast<float>(FLAGS_outputWidth)/mainImage.columns() < static_cast<float>(FLAGS_outputHeight)/mainImage.rows())
   {
-    size_t imageWidth = (float)FLAGS_size / 100.f * (float)FLAGS_outputWidth;
+    size_t imageWidth = static_cast<float>(FLAGS_size) / 100.f * FLAGS_outputWidth;
     if(mainImage.columns() > imageWidth)
     {
       mainImage.resize(Magick::Geometry(std::to_string(imageWidth)));
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   }
   else
   {
-    size_t imageHeight = (float)FLAGS_size / 100.f * (float)FLAGS_outputHeight;
+    size_t imageHeight = static_cast<float>(FLAGS_size) / 100.f * FLAGS_outputHeight;
     if(mainImage.rows() > imageHeight)
     {
       mainImage.resize(Magick::Geometry("x" + std::to_string(imageHeight)));
