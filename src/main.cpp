@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 {
   srand(time(NULL));
 
+  gflags::SetUsageMessage("Generate image collages");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   bool tileType = (FLAGS_tileType == "vertical" || FLAGS_tileType == "v") ? 1 : 0;
 
