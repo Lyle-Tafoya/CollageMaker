@@ -19,8 +19,6 @@ namespace CollageMaker
     {
     public:
       DrawOperation(Magick::Image &&image, size_t x, size_t y);
-      static std::vector<std::unique_ptr<DrawOperation>> drawQueue;
-      static void Draw(Magick::Image &canvas);
     private:
       Magick::Image image;
       size_t x;
@@ -36,6 +34,10 @@ namespace CollageMaker
     void tileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, size_t minDraw, bool tileType);
     void draw();
     std::string popImagePath(size_t imageNum);
+    void queueImage(size_t x, size_t y, Magick::Image &&image);
+
+  private:
+    std::vector<std::unique_ptr<DrawOperation>> drawQueue;
   };
 }
 

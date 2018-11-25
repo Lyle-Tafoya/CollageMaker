@@ -4,18 +4,8 @@ namespace CollageMaker
 {
   size_t randNum(size_t from, size_t to) { return (rand() % (to-from+1)) + from; }
 
-  std::vector<std::unique_ptr<Tiler::DrawOperation>> Tiler::DrawOperation::drawQueue;
-
   Tiler::DrawOperation::DrawOperation(Magick::Image &&image, size_t x, size_t y)
     : image(std::move(image)), x(x), y(y) {}
-
-  void Tiler::DrawOperation::Draw(Magick::Image &canvas)
-  {
-    for(auto &&drawOperation : drawQueue)
-    {
-      canvas.composite(drawOperation->image, drawOperation->x, drawOperation->y);
-    }
-  }
 
   Tiler::Tiler(size_t width, size_t height, const std::string &imageFilePathDatabase, const std::string &canvasColor)
   {
@@ -38,9 +28,17 @@ namespace CollageMaker
     return path;
   }
 
+  void Tiler::queueImage(size_t x, size_t y, Magick::Image &&image)
+  {
+    drawQueue.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
+  }
+
   void Tiler::draw()
   {
-    DrawOperation::Draw(canvas);
+    for(auto &&drawOperation : drawQueue)
+    {
+      canvas.composite(drawOperation->image, drawOperation->x, drawOperation->y);
+    }
   }
 
   // Tile images in a width x height rectangle.
@@ -50,7 +48,7 @@ namespace CollageMaker
   void Tiler::tileImages(size_t width, size_t height, size_t xOrigin, size_t yOrigin, size_t minDraw, bool tileType)
   {
     size_t x = xOrigin, y = yOrigin;
-    std::vector<std::unique_ptr<DrawOperation>> drawQueue;
+    std::vector<std::unique_ptr<DrawOperation>> drawBatch;
     size_t imageNum;
 
     // Tile Horizontally
@@ -70,13 +68,13 @@ namespace CollageMaker
         }
 
         // Put this draw operation in the queue
-        drawQueue.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
+        drawBatch.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
 
         x  += imageWidth;
         // If we run out of room to draw, center what we have then stop
         if(((x-xOrigin) + minDraw) > width)
         {
-          for(auto &&drawOperation : drawQueue)
+          for(auto &&drawOperation : drawBatch)
           {
             drawOperation->x += (width-(x-xOrigin))/2;
           }
@@ -101,13 +99,13 @@ namespace CollageMaker
         }
 
         // Put this draw operation in the queue
-        drawQueue.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
+        drawBatch.emplace_back(std::make_unique<DrawOperation>(std::move(image), x, y));
 
         y += imageHeight;
         // If we run out of room to draw, center what we have then stop
         if((y-yOrigin + minDraw) > height)
         {
-          for(auto &&drawOperation : drawQueue)
+          for(auto &&drawOperation : drawBatch)
           {
             drawOperation->y += (height-(y-yOrigin))/2;
           }
@@ -115,8 +113,6 @@ namespace CollageMaker
         }
       }
     }
-    DrawOperation::drawQueue.insert(DrawOperation::drawQueue.end(),
-        std::make_move_iterator(drawQueue.begin()),
-        std::make_move_iterator(drawQueue.end()));
+    drawQueue.insert(drawQueue.end(), std::make_move_iterator(drawBatch.begin()), std::make_move_iterator(drawBatch.end()));
   }
 }

@@ -120,9 +120,7 @@ int main(int argc, char *argv[])
       break;
   }
 
-  // Queue the first image to be drawn
-  CollageMaker::Tiler::DrawOperation::drawQueue.emplace_back(std::make_unique<CollageMaker::Tiler::DrawOperation>(std::move(mainImage), mainX, mainY));
-
+  tiler.queueImage(mainX, mainY, std::move(mainImage));
   // Tile images horizontally first and then vertically
   if(tileType == 0)
   {
@@ -135,7 +133,6 @@ int main(int argc, char *argv[])
     tiler.tileImages(outputWidth-mainImageWidth, outputHeight, (mainX == 0 ? mainImageWidth : 0), 0, minDraw, 1);
     tiler.tileImages(mainImageWidth, outputHeight-mainImageHeight, mainX,  (mainY == 0 ? mainImageHeight : 0), minDraw, 0);
   }
-
   tiler.draw();
   tiler.canvas.write(filename);
 
